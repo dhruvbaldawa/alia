@@ -5,6 +5,8 @@ import tornado.httpserver
 from tornado.options import define, options
 from tornado.web import url
 
+from sockjs.tornado import SockJSRouter
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -23,9 +25,11 @@ define('db_url', default=config.db_url, type=str)
 
 class Application(tornado.web.Application):
     def __init__(self):
+        TickerRouter = SockJSRouter(TickerConnection, '/ticker')
         handlers = [
             url(r'/', IndexHandler, name='index'),
         ]
+        handlers += TickerRouter.urls
 
         settings = dict(
             debug=options.debug,

@@ -1,5 +1,7 @@
 import tornado.web
 
+from sockjs.tornado import SockJSConnection
+
 
 class BaseHandler(tornado.web.RequestHandler):
     @property
@@ -9,4 +11,16 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class IndexHandler(BaseHandler):
     def get(self):
-        self.write("Hello World")
+        self.render("index.html")
+
+
+class TickerConnection(SockJSConnection):
+    def on_open(self, info):
+        self.timeout = tornado.ioloop.PeriodicCallback(self._ticker, 1000)
+        self.timeout.start()
+
+    def on_close(self):
+        self.timeout.stop()
+
+    def _ticker(self):
+        self.send('tick!')
