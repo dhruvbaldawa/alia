@@ -25,11 +25,10 @@ define('db_url', default=config.db_url, type=str)
 
 class Application(tornado.web.Application):
     def __init__(self):
-        TickerRouter = SockJSRouter(TickerConnection, '/ticker')
         handlers = [
             url(r'/', IndexHandler, name='index'),
+            url(r'/ws', ProxyWebSocket, name='ws'),
         ]
-        handlers += TickerRouter.urls
 
         settings = dict(
             debug=options.debug,
