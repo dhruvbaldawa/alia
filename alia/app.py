@@ -8,11 +8,14 @@ from tornado.web import url
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+from handlers import *
+
 try:
     import config
 except ImportError:
     print("Configuration not found. Please make sure that config.py exists")
 
+# define command line arguments
 define('port', default=config.port, type=int)
 define('debug', default=config.debug, type=bool)
 define('db_url', default=config.db_url, type=str)
@@ -36,17 +39,6 @@ class Application(tornado.web.Application):
         engine = create_engine(options.db_url, convert_unicode=True,
                                echo=options.debug)
         self.db = scoped_session(sessionmaker(bind=engine))
-
-
-class BaseHandler(tornado.web.RequestHandler):
-    @property
-    def db(self):
-        return self.application.db
-
-
-class IndexHandler(BaseHandler):
-    def get(self):
-        self.write("Hello World")
 
 
 def main():
