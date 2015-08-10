@@ -5,8 +5,6 @@ import tornado.httpserver
 from tornado.options import define, options
 from tornado.web import url
 
-from sockjs.tornado import SockJSRouter
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
