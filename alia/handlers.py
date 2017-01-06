@@ -2,13 +2,13 @@ import tornado
 
 from tornado import ioloop, escape, gen, httpclient, httputil, websocket
 
-URL = "ws://localhost:4243/containers/a1dc82526728/attach/ws" \
+URL = "ws://192.168.99.100:2376/containers/214662dd6d69/attach/ws" \
       "?logs=1&stream=1&stdin=1&stdout=1&stderr=1"
 DEFAULT_CONNECT_TIMEOUT = 60
 DEFAULT_REQUEST_TIMEOUT = 60
 
 
-class WebSocketClient():
+class WebSocketClient(object):
     """Base for web socket clients.
     """
 
@@ -22,7 +22,7 @@ class WebSocketClient():
         """Connect to the server.
         :param str url: server URL.
         """
-        headers = httputil.HTTPHeaders({'Origin': 'http://localhost:4243'})
+        headers = httputil.HTTPHeaders({'Origin': 'https://192.168.99.100:2376'})
         request = httpclient.HTTPRequest(url=url,
                                          connect_timeout=self.connect_timeout,
                                          request_timeout=self.request_timeout,
@@ -78,19 +78,19 @@ class WebSocketClient():
         """This is called on successful connection ot the server.
         """
 
-        print "Connection success"
+        print("Connection success")
 
     def _on_connection_close(self):
         """This is called when server closed the connection.
         """
-        print "Connection closed"
+        print("Connection closed")
 
     def _on_connection_error(self, exception):
         """This is called in case if connection to the server could
         not established.
         """
 
-        print "Connection error {}".format(exception)
+        print("Connection error {}".format(exception))
 
 
 class BaseHandler(tornado.web.RequestHandler):

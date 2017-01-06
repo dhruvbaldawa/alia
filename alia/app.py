@@ -1,6 +1,8 @@
 import os
-import tornado
+import asyncio
+import docker
 import tornado.httpserver
+import signal
 
 from tornado.options import define, options
 from tornado.web import url
@@ -9,6 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from handlers import *
+from tasks import task_create_websocket_connections, task_cleanup
 
 try:
     import config
@@ -40,13 +43,26 @@ class Application(tornado.web.Application):
         engine = create_engine(options.db_url, convert_unicode=True,
                                echo=options.debug)
         self.db = scoped_session(sessionmaker(bind=engine))
+        self.docker = docker.from_env()
 
 
 def main():
-    tornado.options.parse_command_line()
-    server = tornado.httpserver.HTTPServer(Application())
+    tornado.platform.asyncio.AsyncIOMainLoop().install()
+    app = Application()
+
+    server = tornado.httpserver.HTTPServer(app)
     server.listen(options.port)
-    tornado.ioloop.IOLoop.instance().start()
+
+    loop = asyncio.get_event_loop()
+    loop.set_debug(True)
+    loop.create_task(task_create_websocket_connections(app))
+    for signame in ('SIGINT', 'SIGTERM'):
+        loop.add_signal_handler(getattr(signal, signame), task_cleanup, loop)
+
+    try:
+        loop.run_forever()
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':

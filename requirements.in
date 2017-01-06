@@ -1,4 +1,4 @@
-Tornado
-Sockjs-tornado
-Sqlalchemy
-Docker-py
+tornado
+sqlalchemy
+docker
+aiohttp
