@@ -59,10 +59,7 @@ def main():
     for signame in ('SIGINT', 'SIGTERM'):
         loop.add_signal_handler(getattr(signal, signame), task_cleanup, loop)
 
-    try:
-        loop.run_forever()
-    finally:
-        loop.close()
+    loop.run_forever()
 
 
 if __name__ == '__main__':

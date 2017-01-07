@@ -1,4 +1,5 @@
 import aiohttp
+import asyncio
 
 
 class _Registry(object):
@@ -11,7 +12,7 @@ class _Registry(object):
     async def _connect_websocket(container):
         socket = container.attach_socket()
         ssl_context = socket.context
-        url = container.client.api._url("/containers/{}/attach/ws?logs=1&stdout=1"
+        url = container.client.api._url("/containers/{}/attach/ws?stdout=1"
                                         "&stderr=1&stream=1"
                                         .format(container.short_id))
         print("url: " + url)
@@ -26,11 +27,14 @@ class _Registry(object):
         self.containers[cid] = {
             'obj': container,
             'ws': None,
+            'task': None,
         }
         resp = await self._connect_websocket(container)
         if not resp.closed and resp.exception() is None:
+            from tasks import task_receive
             self.containers[cid]['ws'] = resp
             print('connected to websocket for ' + cid)
+            task = asyncio.ensure_future(task_receive(cid, resp))
 
     def remove_closed_container(self):
         pass

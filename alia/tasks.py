@@ -1,21 +1,24 @@
 import asyncio
 
-from registry import Registry
+from websockets import WebsocketManager
 
 
 async def task_create_websocket_connections(app):
     print('running task_create_websocket_connections')
     containers = app.docker.containers.list()
     for container in containers:
-        await Registry.register_container(container)
+        task = asyncio\
+                .get_event_loop()\
+                .create_task(WebsocketManager.connect_container(container))
+        WebsocketManager.register_task(container, task)
     print('done task_create_websocket_connections')
 
 
 def task_cleanup(loop):
     print('cleaning up...')
     try:
-        for k, v in Registry.containers.items():
-            if v['ws'] is not None:
-                loop.create_task(v['ws'].close)
+        WebsocketManager.cleanup()
+    except:
+        raise
     finally:
         loop.stop()
