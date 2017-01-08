@@ -10,15 +10,11 @@ async def task_create_websocket_connections(app):
         task = asyncio\
                 .get_event_loop()\
                 .create_task(WebsocketManager.connect_container(container))
-        WebsocketManager.register_task(container, task)
     print('done task_create_websocket_connections')
 
 
 def task_cleanup(loop):
     print('cleaning up...')
-    try:
-        WebsocketManager.cleanup()
-    except:
-        raise
-    finally:
-        loop.stop()
+    for task in asyncio.Task.all_tasks():
+        task.cancel()
+    loop.call_later(1, loop.stop)

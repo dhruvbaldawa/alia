@@ -3,15 +3,13 @@ import asyncio
 
 
 class WebsocketInfo(object):
-    def __init__(self, websocket=None, container_id=None):
+    def __init__(self, websocket=None, container_id=None, task=None):
         self.websocket = websocket
         self.container_id = container_id
-        self.task = None
+        self.task = task
 
 
 class _WebsocketManager(object):
-    CLOSE_MSG = '/close/'
-
     def __init__(self):
         self.info = {}
         self.listeners = {}
@@ -33,29 +31,29 @@ class _WebsocketManager(object):
         session = aiohttp.ClientSession(**settings)
 
         async with session.ws_connect(url) as ws:
-            info = WebsocketInfo(ws, cid)
+            info = WebsocketInfo(ws, cid, asyncio.Task.current_task())
             self.info[cid] = info
-            try:
-                async for msg in ws:
-                    if msg.type == aiohttp.WSMsgType.TEXT:
-                        if msg.data == self.CLOSE_MSG:
-                            await ws.close()
-                            break
-                        else:
-                            print('r:{}:{}'.format(cid, msg.data))
-                            self.call_listeners(cid, msg.data)
-                    elif msg.type == aiohttp.WSMsgType.CLOSED:
-                        print('websocket closed:', msg.extra)
-                        break
-                    elif msg.type == aiohttp.WSMsgType.ERROR:
-                        print('error occurred for websocket:', msg.data)
-                        break
-            except asyncio.CancelledError:
-                await ws.close()
-                session.close()
+            while asyncio.get_event_loop().is_running():
+                try:
+                    msg = await ws.receive()
+                except asyncio.CancelledError:
+                    print('got cancelled')
+                    ws.close()
+                    session.close()
+                    return
+
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    print('r:{}:{}'.format(cid, msg.data))
+                    self.call_listeners(cid, msg.data)
+                elif msg.type == aiohttp.WSMsgType.CLOSED:
+                    print('websocket closed:', msg.extra)
+                    break
+                elif msg.type == aiohttp.WSMsgType.ERROR:
+                    print('error occurred for websocket:', msg.data)
+                    break
+            ws.close()
 
     def disconnect_container(self, container_id):
-        self.send_message(container_id, self.CLOSE_MSG)
         info = self.info.pop(container_id)
         info.task.cancel()
         self.listeners.pop(container_id, '')

@@ -54,12 +54,17 @@ def main():
     server.listen(options.port)
 
     loop = asyncio.get_event_loop()
-    loop.set_debug(True)
+    # loop.set_debug(True)
     loop.create_task(task_create_websocket_connections(app))
     for signame in ('SIGINT', 'SIGTERM'):
         loop.add_signal_handler(getattr(signal, signame), task_cleanup, loop)
 
-    loop.run_forever()
+    try:
+        loop.run_forever()
+    except asyncio.CancelledError:
+        print('tasks have been cancelled')
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':
