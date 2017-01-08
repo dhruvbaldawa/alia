@@ -1,6 +1,7 @@
 import tornado
 
 from tornado import ioloop, escape, gen, httpclient, httputil, websocket
+from websockets import WebsocketManager
 
 URL = "ws://192.168.99.100:2376/containers/214662dd6d69/attach/ws" \
       "?logs=1&stream=1&stdin=1&stdout=1&stderr=1"
@@ -105,20 +106,33 @@ class IndexHandler(BaseHandler):
 
 
 class ProxyWebSocket(tornado.websocket.WebSocketHandler):
+    def _validate_container_argument(self):
+        try:
+            container = self.request.query_arguments['container'][0].decode()
+            return container
+        except KeyError:
+            print('no container specified')
+            return None
+
     def open(self):
-        self.client = WebSocketClient()
-        self.client.connect(URL)
-        self.client._on_message = self._receive_callback
+        container = self._validate_container_argument()
+        if container is None or not WebsocketManager.has_container(container):
+            self.close()
+            return
+        self.container = container
+        WebsocketManager.register_listener(container, self._receive_callback)
+
+        print(self.request.query_arguments)
         print("WebSocket opened")
 
     def on_message(self, message):
-        self.client.send(message)
+        WebsocketManager.send_message(self.container, message)
 
     def _receive_callback(self, message):
         self.write_message(message)
 
     def on_close(self):
-        self.client.close()
+        # @TODO: remove individual listener
         print("WebSocket closed")
 
     def check_origin(self, origin):

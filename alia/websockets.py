@@ -14,6 +14,9 @@ class _WebsocketManager(object):
         self.info = {}
         self.listeners = {}
 
+    def has_container(self, container_id):
+        return container_id in self.info
+
     async def connect_container(self, container):
         cid = container.short_id
         if cid in self.info:
@@ -43,7 +46,6 @@ class _WebsocketManager(object):
                     return
 
                 if msg.type == aiohttp.WSMsgType.TEXT:
-                    print('r:{}:{}'.format(cid, msg.data))
                     self.call_listeners(cid, msg.data)
                 elif msg.type == aiohttp.WSMsgType.CLOSED:
                     print('websocket closed:', msg.extra)
